@@ -1,0 +1,47 @@
+-- [문제이해]
+-- 7월 아이스크림 총 주문량 (GROUP BY 써서 HAVING 집계 같음)
+-- 상반기의 아이스크림 총 주문량을 더한 값이 큰 순서대로 상위 3개의 맛을 조회하는 SQL 문
+-- 상위 3개의 맛,월별 테이블이 있네
+-- 출하번호가 같은 맛이어도 다른게 있네
+
+WITH 
+TOTAL_SUM AS (
+    SELECT A.FLAVOR,
+        SUM(COALESCE(A.TOTAL_ORDER, 0) + COALESCE(B.TOTAL_ORDER, 0)) AS TOTAL_ORDER
+    FROM JULY A 
+    LEFT JOIN FIRST_HALF B ON A.SHIPMENT_ID = B.SHIPMENT_ID 
+    GROUP BY FLAVOR
+),
+R_TOTAL_ORDER AS (
+    SELECT FLAVOR, RANK() OVER (ORDER BY TOTAL_ORDER DESC) AS R
+    FROM TOTAL_SUM
+)
+SELECT FLAVOR
+FROM R_TOTAL_ORDER
+WHERE R <= 3
+ORDER BY R
+
+-- SELECT A.FLAVOR, (A.TOTAL_ORDER + B.TOTAL_ORDER) AS T
+-- FROM JULY A LEFT JOIN FIRST_HALF B ON A.SHIPMENT_ID = B.SHIPMENT_ID 
+-- GROUP BY A.FLAVOR
+-- SELECT FLAVOR, T, RANK() OVER (ORDER BY T DESC) AS R
+-- FROM TOTAL_SUM
+-- R_TOTAL_ORDER AS (
+--    SELECT FLAVOR, RANK() OVER (ORDER BY T DESC) AS R
+--    FROM TOTAL_SUM
+-- )
+-- SELECT *
+-- FROM R_TOTAL_ORDER
+-- WHERE R <= 3
+
+-- 생각해보니 RANK 함수도 있는데
+-- RANK() OVER (PARTITION BY FOOD_TYPE ORDER BY FAVORITES DESC) AS FR
+
+
+-- 더하는 방법이 뭘까?
+-- ㄹㅇ 놀랍게 그냥 더했더니 합쳐짐
+-- SUM(A.TOTAL_ORDER) AS J_T, SUM(B.TOTAL_ORDER) AS A_T 이 방법으로 재차확인
+
+-- 새롭게 안 사실 WITH은 한번만 쓰면 된다.
+-- 1차시도 이후 NULL값은 합해치면 0이 된다는 사실을 다시 한번 생각하게 되어(많은시행착오속) 추가하였다.
+-- FWG HSO
